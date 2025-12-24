@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Plantilla {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  estado      String   @default("BORRADOR") // BORRADOR, PUBLICADA
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  borradores  PlantillaBorrador[]
+  versiones   PlantillaVersion[]
+  ejecuciones Ejecucion[]
+
+  @@map("plantillas")
+}
+
+model PlantillaBorrador {
+  id          String   @id @default(cuid())
+  plantillaId String
+  configuracion Json   // JSONB en PostgreSQL
+  actualizadaEn DateTime @default(now()) @updatedAt
+
+  plantilla Plantilla @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+
+  @@map("plantilla_borradores")
+}
+
+model PlantillaVersion {
+  id          String   @id @default(cuid())
+  plantillaId String
+  version     Int
+  configuracion Json   // JSONB en PostgreSQL - snapshot inmutable
+  checksum    String   // SHA-256 hash para verificar inmutabilidad
+  publicadaEn DateTime @default(now())
+
+  plantilla   Plantilla   @relation(fields: [plantillaId], references: [id], onDelete: Cascade)
+  ejecuciones Ejecucion[]
+
+  @@unique([plantillaId, version])
+  @@map("plantilla_versiones")
+}
+
+model Ejecucion {
+  id                 String   @id @default(cuid())
+  plantillaId        String
+  plantillaVersionId String
+  estado             String   @default("EN_PROGRESO") // EN_PROGRESO, FINALIZADA, CANCELADA
+  iniciadaEn         DateTime @default(now())
+  finalizadaEn       DateTime?
+
+  plantilla        Plantilla        @relation(fields: [plantillaId], references: [id])
+  plantillaVersion PlantillaVersion @relation(fields: [plantillaVersionId], references: [id])
+  respuestas       Respuesta[]
+  deshacerSnapshots DeshacerSnapshot[]
+
+  @@map("ejecuciones")
+}
+
+model Respuesta {
+  id          String   @id @default(cuid())
+  ejecucionId String
+  preguntaId  String   // ID de la pregunta en la configuración
+  valor       Json     // JSONB - puede ser string, number, array, etc.
+  esValida    Boolean  @default(true)
+  respondidaEn DateTime @default(now())
+  invalidadaEn DateTime?
+
+  ejecucion Ejecucion @relation(fields: [ejecucionId], references: [id], onDelete: Cascade)
+
+  @@map("respuestas")
+}
+
+model DeshacerSnapshot {
+  id         String   @id @default(cuid())
+  ejecucionId String
+  creadaEn   DateTime @default(now())
+  expiraEn   DateTime // 30 segundos después de creadaEn
+  payload    Json     // JSONB - snapshot del estado antes del cambio
+
+  ejecucion Ejecucion @relation(fields: [ejecucionId], references: [id], onDelete: Cascade)
+
+  @@map("deshacer_snapshots")
+}
+

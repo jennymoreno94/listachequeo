@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["preguntas", "transiciones", "resultados"],
+  "properties": {
+    "datosBasicos": {
+      "type": "object",
+      "required": ["nombre", "duracionEstimada"],
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "descripcion": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "duracionEstimada": {
+          "type": "number",
+          "minimum": 1
+        },
+        "allowBacktrack": {
+          "type": "boolean"
+        },
+        "maxDepth": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "exigirRespuestas": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "preguntas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "texto", "tipo"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "texto": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "enum": ["UNA_OPCION", "MULTIPLES_OPCIONES", "TEXTO", "NUMERO", "FOTO_URL", "FECHA"]
+          },
+          "opciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["value", "label"],
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "validaciones": {
+            "type": "object",
+            "properties": {
+              "requerido": {
+                "type": "boolean"
+              },
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "patron": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "esInicial": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "transiciones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["desdePreguntaId", "operador", "siguientesPreguntas", "prioridad"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "desdePreguntaId": {
+            "type": "string"
+          },
+          "operador": {
+            "type": "string",
+            "enum": ["EQUALS", "NOT_EQUALS", "IN", "GT", "LT", "GTE", "LTE", "IS_EMPTY", "IS_NOT_EMPTY"]
+          },
+          "valor": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "array" }
+            ]
+          },
+          "siguientesPreguntas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "prioridad": {
+            "type": "number",
+            "minimum": 0
+          },
+          "esDefault": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "resultados": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["nombre", "prioridad", "condiciones", "acciones"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prioridad": {
+            "type": "number",
+            "minimum": 0
+          },
+          "condiciones": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["preguntaId", "operador"],
+              "properties": {
+                "preguntaId": {
+                  "type": "string"
+                },
+                "operador": {
+                  "type": "string",
+                  "enum": ["EQUALS", "NOT_EQUALS", "IN", "GT", "LT", "GTE", "LTE", "IS_EMPTY", "IS_NOT_EMPTY"]
+                },
+                "valor": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "number" },
+                    { "type": "array" }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "acciones": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["tipo"],
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "enum": ["ESCALATE", "ORDER_PART", "SCHEDULE_FOLLOWUP", "NOTIFY", "LOG"]
+                },
+                "payload": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+
